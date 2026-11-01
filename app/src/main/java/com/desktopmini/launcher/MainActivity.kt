@@ -421,15 +421,45 @@ class MainActivity : Activity(), FullscreenHost {
         return true
     }
 
-    private fun remoteVoice(q: String) {
-        if (voiceOpenCommand(q)) return
-        if (mode == 1) {
-            val ok = tv?.playByName(q) ?: false
-            if (!ok) Toast.makeText(this, "Không tìm thấy kênh: $q", Toast.LENGTH_LONG).show()
-            return
+    // Câu ghép "mở YouTube mở bài hát X" / "mở TV kênh HTV9": chuyển app rồi làm luôn phần sau, chỉ cần nói một lần.
+    // Trả về (chế độ 1 = TV, 2 = YouTube) và phần nội dung (giữ dấu); null nếu không phải câu ghép.
+    private val VOICE_PREFIX = setOf("mo", "bat", "vao", "open", "chuyen", "sang", "qua", "di", "toi", "quay", "ve", "ra", "lai",
+        "trang", "chu", "man", "hinh", "chon", "kenh")
+    private val VOICE_YT_KEYS = listOf(listOf("youtube"), listOf("you", "tube"), listOf("du", "tup"), listOf("diu", "tup"),
+        listOf("yu", "tup"), listOf("iu", "tup"))
+    private val VOICE_TV_KEYS = listOf(listOf("tv"), listOf("tivi"), listOf("ti", "vi"), listOf("truyen", "hinh"))
+    private val VOICE_YT_FILL = setOf("va", "roi", "mo", "phat", "nghe", "tim", "kiem", "xem", "bai", "hat", "nhac", "video", "clip",
+        "cua", "ten", "cho", "toi", "len", "tren", "di")
+    private val VOICE_TV_FILL = setOf("va", "roi", "mo", "bat", "xem", "kenh", "dai", "truyen", "hinh", "tren", "cho", "toi", "len", "di", "nhe")
+
+    private fun voiceSwitchAndQuery(q: String): Pair<Int, String>? {
+        val words = ArrayList<String>(); val nw = ArrayList<String>()
+        for (w in q.trim().split(Regex("\\s+"))) {
+            val k = normVoice(w).replace(" ", "")
+            if (k.isNotEmpty()) { words.add(w.trim(',', '.', '!', '?', ';', '"', '\'')); nw.add(k) }
         }
-        if (mode != 2) { hideFull(); setMode(2) }
-        yt?.search(q)
+        fun find(keys: List<List<String>>): Pair<Int, Int>? {
+            for (i in nw.indices) for (k in keys) {
+                if (i + k.size <= nw.size && k.indices.all { nw[i + it] == k[it] }) return i to k.size
+            }
+            return null
+        }
+        val yt = find(VOICE_YT_KEYS); val tvk = find(VOICE_TV_KEYS)
+        // Lấy từ khóa xuất hiện sớm hơn (đó là app được yêu cầu chuyển tới)
+        val (mode2, hit) = when {
+            yt != null && (tvk == null || yt.first <= tvk.first) -> 2 to yt
+            tvk != null -> 1 to tvk
+            else -> return null
+        }
+        if (!nw.subList(0, hit.first).all { it in VOICE_PREFIX }) return null
+        var a = hit.first + hit.second
+        val fill = if (mode2 == 2) VOICE_YT_FILL else VOICE_TV_FILL
+        while (a < nw.size && nw[a] in fill) a++
+        if (a >= nw.size) return null      // chỉ có lệnh mở, không kèm nội dung
+        return mode2 to words.subList(a, words.size).joinToString(" ")
+    }
+
+    private fun ytOpenFirstVideo() {
         val js = "(function(){var a=document.querySelector('a[href*=\"/watch?v=\"]');if(a){a.click();return 1}return 0})()"
         fun tryOpen(n: Int) {
             ui.postDelayed({
@@ -438,6 +468,32 @@ class MainActivity : Activity(), FullscreenHost {
             }, 3000)
         }
         tryOpen(0)
+    }
+
+    private fun remoteVoice(q: String) {
+        // Câu ghép: chuyển app + nói luôn tên bài / kênh trong một lần
+        voiceSwitchAndQuery(q)?.let { (m, rest) ->
+            hideFull()
+            if (m == 1) {
+                if (mode != 1) setMode(1)
+                tv?.home()
+                if (tv?.playByName(rest) != true) Toast.makeText(this, "Không tìm thấy kênh: $rest", Toast.LENGTH_LONG).show()
+            } else {
+                if (mode != 2) setMode(2)
+                yt?.search(rest)
+                ytOpenFirstVideo()
+            }
+            return
+        }
+        if (voiceOpenCommand(q)) return
+        if (mode == 1) {
+            val ok = tv?.playByName(q) ?: false
+            if (!ok) Toast.makeText(this, "Không tìm thấy kênh: $q", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (mode != 2) { hideFull(); setMode(2) }
+        yt?.search(q)
+        ytOpenFirstVideo()
     }
 
     // Điện thoại gửi {del, ins}: xoá `del` ký tự trước con trỏ rồi chèn `ins` vào ô nhập đang chọn của TV/YouTube.
