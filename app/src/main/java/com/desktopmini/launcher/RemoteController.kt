@@ -188,7 +188,7 @@ class RemoteController(
 
     /** Chat luong video YouTube 360p / 720p: luu vao localStorage cua YouTube + ep player dang phat, thu lai vai lan vi player doi chat luong khi nap video. */
     private fun setQuality(q: Int) {
-        val name = when (q) { 360 -> "medium"; 720 -> "hd720"; else -> return }
+        val name = when (q) { 360 -> "medium"; 480 -> "large"; 720 -> "hd720"; else -> return }
         val js = "(function(){var q=$q,n='$name';try{var t=Date.now();localStorage.setItem('yt-player-quality',JSON.stringify({data:JSON.stringify({quality:q,previousQuality:q}),expiration:t+2592000000,creation:t}));}catch(e){}" +
             "try{var p=document.getElementById('movie_player')||document.querySelector('.html5-video-player');if(p){if(p.setPlaybackQualityRange)p.setPlaybackQualityRange(n,n);if(p.setPlaybackQuality)p.setPlaybackQuality(n);}}catch(e){}})()"
         for (d in longArrayOf(0, 1500, 4000)) ui.postDelayed({ activeWeb()?.evaluateJavascript(js, null) }, d)
