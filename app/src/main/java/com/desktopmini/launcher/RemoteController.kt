@@ -43,6 +43,9 @@ class RemoteController(
     var onFullscreen: (() -> Unit)? = null
     var onBack: (() -> Unit)? = null
 
+    /** Dat boi MainActivity: phim ▲▼◀▶ OK di qua o chon cua trang dang mo (YouTube: tung video; TV: dai/kenh). true = da xu ly. */
+    var onKey: ((String) -> Boolean)? = null
+
     /** Dat boi MainActivity: "tiep theo" - TV: kenh ke tiep trong dai; tra false thi dung lenh cua trang (YouTube). */
     var onNext: (() -> Boolean)? = null
 
@@ -214,6 +217,7 @@ class RemoteController(
             "ok" -> KeyEvent.KEYCODE_DPAD_CENTER
             else -> return
         }
+        if (onKey?.invoke(k) == true) return
         activeWeb()?.requestFocus()
         act.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
         act.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
