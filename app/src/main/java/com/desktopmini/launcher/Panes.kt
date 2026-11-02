@@ -183,8 +183,10 @@ class YouTubePane(private val act: Activity, private val full: FullscreenHost) {
     /** Remote ▲▼ đưa ô chọn qua từng video, OK mở video đang có ô chọn; ◀▶ và trường hợp không có video thì bắn phím thô cho trang. */
     fun onKey(k: String): Boolean {
         val js = when (k) {
-            "up" -> "window.__wbNav&&window.__wbNav(-1)"
-            "down" -> "window.__wbNav&&window.__wbNav(1)"
+            "up" -> "window.__wbVert&&window.__wbVert(-1)"
+            "down" -> "window.__wbVert&&window.__wbVert(1)"
+            "left" -> "window.__wbNav&&window.__wbNav(-1)"
+            "right" -> "window.__wbNav&&window.__wbNav(1)"
             "ok" -> "window.__wbOk&&window.__wbOk()"
             else -> return false
         }
