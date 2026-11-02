@@ -63,6 +63,8 @@ const val YT_ONLY_AD_JS = """
  var HIDE='.ytp-ad-overlay-container,.ytp-ad-text-overlay,.ytp-ad-image-overlay,.video-ads,#player-ads,ytd-promoted-sparkles-web-renderer,ytd-display-ad-renderer,ytd-in-feed-ad-layout-renderer,ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,ytm-companion-ad-renderer,ytm-promoted-video-renderer{display:none!important}';
  var SKIP=['.ytp-ad-skip-button','.ytp-ad-skip-button-modern','.ytp-skip-ad-button','.videoAdUiSkipButton','.ytp-ad-skip-button-container button','.ytp-skip-ad button'];
  var mutedByUs=false,fastByUs=false;
+ // Nhớ cờ "đã tắt tiếng do quảng cáo" qua các lần nạp trang (bấm Lùi nạp lại trang): nếu không thì cờ mất, video sau đó bị YouTube giữ im lặng
+ try{ mutedByUs=sessionStorage.getItem('__wbMuted')==='1'; }catch(e){}
  function tick(){
   try{
    var on=window.__wbAdSkip!==false;
@@ -75,11 +77,14 @@ const val YT_ONLY_AD_JS = """
    if(on&&ad){
     for(var i=0;i<SKIP.length;i++){var b=document.querySelector(SKIP[i]);if(b)b.click();}
     if(v){
-     if(!v.muted){v.muted=true;mutedByUs=true;}
+     if(!v.muted){v.muted=true;mutedByUs=true;try{sessionStorage.setItem('__wbMuted','1')}catch(e){}}
      if(v.duration&&isFinite(v.duration)){v.currentTime=v.duration;}else{v.playbackRate=16;fastByUs=true;}
     }
    }else if(v){
-    if(mutedByUs){v.muted=false;mutedByUs=false;}
+    if(mutedByUs){
+     try{var mp=document.getElementById('movie_player'); if(mp&&mp.unMute) mp.unMute();}catch(e){}
+     v.muted=false;mutedByUs=false;try{sessionStorage.removeItem('__wbMuted')}catch(e){}
+    }
     if(fastByUs){v.playbackRate=1;fastByUs=false;}
    }
   }catch(e){}
