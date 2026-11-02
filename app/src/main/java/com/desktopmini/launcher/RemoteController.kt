@@ -46,6 +46,9 @@ class RemoteController(
     /** Dat boi MainActivity: phim ▲▼◀▶ OK di qua o chon cua trang dang mo (YouTube: tung video; TV: dai/kenh). true = da xu ly. */
     var onKey: ((String) -> Boolean)? = null
 
+    /** Dat boi MainActivity: vuot 2 ngon cuon danh sach native (chon dai / kenh TV). true = da cuon. */
+    var onScroll: ((Int) -> Boolean)? = null
+
     /** Dat boi MainActivity: "tiep theo" - TV: kenh ke tiep trong dai; tra false thi dung lenh cua trang (YouTube). */
     var onNext: (() -> Boolean)? = null
 
@@ -110,7 +113,7 @@ class RemoteController(
             "click" -> { showCursor(); tap() }
             "scroll" -> {
                 val dy = o.optInt("dy")
-                scrollAtCursor(-dy * 2)
+                if (onScroll?.invoke(-dy * 2) != true) scrollAtCursor(-dy * 2)
             }
             "key" -> key(o.optString("key"))
             "screen" -> if (o.optBoolean("on", true)) wake() else lock()

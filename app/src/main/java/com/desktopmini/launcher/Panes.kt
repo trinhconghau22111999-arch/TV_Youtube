@@ -288,6 +288,14 @@ class TvPane(private val act: Activity, private val full: FullscreenHost) {
         paintNav()
     }
 
+    /** Remote vuốt 2 ngón: cuộn danh sách đài / kênh. true = đã cuộn; false (đang xem kênh) = để trang phát tự cuộn. */
+    fun scrollList(dy: Int): Boolean {
+        if (level == 2) return false
+        val sv = navScroll ?: return false
+        sv.scrollBy(0, dy)
+        return true
+    }
+
     /** Remote ở trang chọn đài / chọn kênh. true = đã xử lý; false (đang xem kênh) = chuyển cho trang phát. */
     fun onKey(k: String): Boolean {
         if (level == 2 || navItems.isEmpty()) return false
