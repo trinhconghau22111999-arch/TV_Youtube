@@ -171,6 +171,7 @@ class YouTubePane(private val act: Activity, private val full: FullscreenHost) {
                     view?.evaluateJavascript("window.__wbAdSkip=true;" + YT_ONLY_AD_JS, null)
                     view?.evaluateJavascript(VOICE_HOOK_JS, null)
                     view?.evaluateJavascript(HIDE_OPEN_APP_JS, null)
+                    view?.evaluateJavascript(YT_NOMUTE_JS, null)
                     view?.evaluateJavascript(YT_NAV_JS, null)
                 }
             }
@@ -401,7 +402,10 @@ class TvPane(private val act: Activity, private val full: FullscreenHost) {
             override fun onPageFinished(view: WebView?, u: String?) {
                 view?.evaluateJavascript(TV_FULL_JS, null)
                 val h = try { Uri.parse(u ?: "").host } catch (e: Exception) { null } ?: return
-                if (hostIs(h, "youtube.com")) view?.evaluateJavascript("window.__wbAdSkip=true;" + YT_ONLY_AD_JS, null)
+                if (hostIs(h, "youtube.com")) {
+                    view?.evaluateJavascript("window.__wbAdSkip=true;" + YT_ONLY_AD_JS, null)
+                    view?.evaluateJavascript(YT_NOMUTE_JS, null)
+                }
             }
         }
         w.webChromeClient = chromeClient(full)

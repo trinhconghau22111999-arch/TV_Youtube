@@ -225,3 +225,34 @@ const val YT_NAV_JS = """
  };
 })();
 """
+
+/**
+ * YouTube KHÔNG BAO GIỜ bị tắt tiếng: ở trang xem video (/watch, /shorts) video nào đang im (lần đầu vào, quay lại video trước,
+ * YouTube tự nhớ trạng thái tắt tiếng...) thì bật tiếng lại ngay. Lúc quảng cáo đang được tua thì để yên (đã có đoạn tắt tiếng quảng cáo).
+ * Chỉ đụng tới tiếng của chính video, KHÔNG đụng tới âm lượng hệ thống (thanh âm lượng trên remote kéo về 0 vẫn im như ý người dùng).
+ */
+const val YT_NOMUTE_JS = """
+(function(){
+ if(window.__wbNoMute) return; window.__wbNoMute=true;
+ function watching(){ var p=location.pathname; return p.indexOf('/watch')===0||p.indexOf('/shorts')===0; }
+ function adShowing(){ var p=document.querySelector('.html5-video-player'); return !!(p&&(p.classList.contains('ad-showing')||p.classList.contains('ad-interrupting'))); }
+ function fix(v){
+   try{
+     if(!v||!watching()||adShowing()) return;
+     var mp=document.getElementById('movie_player');
+     if(v.muted||(mp&&mp.isMuted&&mp.isMuted())){ if(mp&&mp.unMute) mp.unMute(); v.muted=false; }
+     if(v.volume===0){ if(mp&&mp.setVolume) mp.setVolume(100); v.volume=1; }
+   }catch(e){}
+ }
+ function main(){ return document.querySelector('video.html5-main-video')||document.querySelector('video'); }
+ // YouTube hay lưu trạng thái tắt tiếng / âm lượng 0 của lần trước: xóa để video mới không bắt đầu trong im lặng
+ try{
+   var k='yt-player-volume', raw=localStorage.getItem(k);
+   if(raw){ var o=JSON.parse(raw), dd=JSON.parse(o.data); if(dd.muted||!dd.volume){ dd.muted=false; dd.volume=100; o.data=JSON.stringify(dd); localStorage.setItem(k,JSON.stringify(o)); } }
+ }catch(e){}
+ ['volumechange','loadedmetadata','play','playing'].forEach(function(n){
+   document.addEventListener(n,function(e){ if(e.target&&e.target.tagName==='VIDEO') fix(e.target); },true);
+ });
+ setInterval(function(){ fix(main()); },300);
+})();
+"""
