@@ -227,9 +227,10 @@ const val YT_NAV_JS = """
 """
 
 /**
- * YouTube KHÔNG BAO GIỜ bị tắt tiếng: ở trang xem video (/watch, /shorts) video nào đang im (lần đầu vào, quay lại video trước,
- * YouTube tự nhớ trạng thái tắt tiếng...) thì bật tiếng lại ngay. Lúc quảng cáo đang được tua thì để yên (đã có đoạn tắt tiếng quảng cáo).
- * Chỉ đụng tới tiếng của chính video, KHÔNG đụng tới âm lượng hệ thống (thanh âm lượng trên remote kéo về 0 vẫn im như ý người dùng).
+ * YouTube KHÔNG BAO GIỜ bị tắt tiếng ngay lúc video mới bắt đầu: ở trang xem video (/watch, /shorts), trong 2 giây đầu
+ * mỗi khi một video bắt đầu được nạp/phát (lần đầu vào, quay lại video trước...), nếu video đang im thì bật tiếng lại.
+ * Sau 2 giây đầu thì không kiểm tra nữa, nên người dùng tự tắt tiếng / kéo âm lượng về 0 vẫn được tôn trọng.
+ * Lúc quảng cáo đang được tua thì để yên (đã có đoạn tắt tiếng quảng cáo).
  */
 const val YT_NOMUTE_JS = """
 (function(){
@@ -250,9 +251,20 @@ const val YT_NOMUTE_JS = """
    var k='yt-player-volume', raw=localStorage.getItem(k);
    if(raw){ var o=JSON.parse(raw), dd=JSON.parse(o.data); if(dd.muted||!dd.volume){ dd.muted=false; dd.volume=100; o.data=JSON.stringify(dd); localStorage.setItem(k,JSON.stringify(o)); } }
  }catch(e){}
- ['volumechange','loadedmetadata','play','playing'].forEach(function(n){
-   document.addEventListener(n,function(e){ if(e.target&&e.target.tagName==='VIDEO') fix(e.target); },true);
- });
- setInterval(function(){ fix(main()); },300);
+ // Chi kiem tra trong 2 giay dau moi khi mot video bat dau (doi src = video moi; play lai cung video thi bo qua)
+ var curSrc=null, timer=null, until=0;
+ function stopWin(){ if(timer){ clearInterval(timer); timer=null; } }
+ function startWin(v){
+   stopWin(); until=Date.now()+2000; fix(v);
+   timer=setInterval(function(){ if(Date.now()>=until){ stopWin(); return; } fix(v); },250);
+ }
+ function onStart(e){
+   var v=e.target; if(!v||v.tagName!=='VIDEO') return;
+   var src=v.currentSrc||v.src||'';
+   if(e.type==='play' && src===curSrc) return;
+   curSrc=src; startWin(v);
+ }
+ ['loadedmetadata','play'].forEach(function(n){ document.addEventListener(n,onStart,true); });
+ var first=main(); if(first && !first.paused){ onStart({type:'play',target:first}); }
 })();
 """
