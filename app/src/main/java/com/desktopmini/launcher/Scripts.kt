@@ -248,6 +248,36 @@ const val YT_NAV_JS = """
 """
 
 /**
+ * YouTube: ẩn toàn bộ phần Shorts (kệ Shorts trên trang chủ / tìm kiếm, thẻ video dẫn tới /shorts/).
+ * Ẩn bằng CSS cho các kệ Shorts đã biết, và ẩn thêm từng thẻ có liên kết /shorts/ (theo dõi thay đổi trang để bắt nội dung tải thêm).
+ * Không chạy ở trang đang xem Shorts, và không đụng trang xem video thường.
+ */
+const val HIDE_SHORTS_JS = """
+(function(){
+ if(window.__wbNoShorts) return; window.__wbNoShorts=true;
+ var SHELF='ytm-reel-shelf-renderer,ytd-reel-shelf-renderer,ytm-reel-item-renderer,ytd-reel-item-renderer,ytm-shorts-lockup-view-model,ytm-shorts-lockup-view-model-v2,ytm-pivot-bar-item-renderer[aria-label*="Shorts"]';
+ var CARD='ytm-compact-video-renderer,ytm-video-with-context-renderer,ytm-rich-item-renderer,ytm-media-item,ytm-rich-grid-media,ytd-rich-item-renderer,ytd-video-renderer,ytd-compact-video-renderer,ytd-grid-video-renderer,ytd-rich-grid-media';
+ var st=document.createElement('style'); st.id='__wbNoShortsCss';
+ st.textContent=SHELF+'{display:none!important}';
+ (document.head||document.documentElement).appendChild(st);
+ function hide(el){ if(el && el.style) el.style.setProperty('display','none','important'); }
+ function sweep(){
+   if(location.pathname.indexOf('/shorts')===0) return;
+   try{
+     var sh=document.querySelectorAll(SHELF);
+     for(var i=0;i<sh.length;i++) hide(sh[i]);
+     var as=document.querySelectorAll('a[href*="/shorts/"]');
+     for(var j=0;j<as.length;j++){ hide(as[j].closest(CARD+','+SHELF) || as[j]); }
+   }catch(e){}
+ }
+ var t=null;
+ function later(){ if(t) return; t=setTimeout(function(){ t=null; sweep(); },300); }
+ sweep();
+ try{ new MutationObserver(later).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+ })();
+"""
+
+/**
  * YouTube KHÔNG BAO GIỜ bị tắt tiếng ngay lúc video mới bắt đầu: ở trang xem video (/watch, /shorts), trong 2 giây đầu
  * mỗi khi một video bắt đầu được nạp/phát (lần đầu vào, quay lại video trước...), nếu video đang im thì bật tiếng lại.
  * Sau 2 giây đầu thì không kiểm tra nữa, nên người dùng tự tắt tiếng / kéo âm lượng về 0 vẫn được tôn trọng.
