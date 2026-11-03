@@ -76,18 +76,18 @@ private fun configureWebView(act: Activity, web: WebView) {
     s.loadWithOverviewMode = true
     s.allowFileAccess = false
     s.allowContentAccess = false
-    s.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+    if (android.os.Build.VERSION.SDK_INT >= 21) s.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
     // UA như Chrome thật (bỏ "; wv" và "Version/4.0") + không gửi X-Requested-With
     s.userAgentString = WebSettings.getDefaultUserAgent(act).replace("; wv)", ")").replace(" Version/4.0", "")
     try {
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST))
+        if (android.os.Build.VERSION.SDK_INT >= 21 && WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST))
             WebSettingsCompat.setRequestedWithHeaderOriginAllowList(s, emptySet())
     } catch (e: Exception) { }
     CookieManager.getInstance().setAcceptCookie(true)
-    CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+    if (android.os.Build.VERSION.SDK_INT >= 21) CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
     web.setBackgroundColor(Color.BLACK)
     try {
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT))
+        if (android.os.Build.VERSION.SDK_INT >= 21 && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT))
             WebViewCompat.addDocumentStartJavaScript(web, "window.__wbAdSkip=true;" + YT_ONLY_AD_JS + HIDE_OPEN_APP_JS,
                 setOf("https://*.youtube.com", "https://youtube.com"))
     } catch (e: Exception) { }
@@ -151,6 +151,21 @@ class YouTubePane(private val act: Activity, private val full: FullscreenHost) {
                     return WebResourceResponse("text/html", "utf-8", ByteArrayInputStream(html.toByteArray(Charsets.UTF_8)))
                 }
                 return null
+            }
+
+            // Android < 7 (API < 24 / < 21) chỉ gọi các bản hàm nhận chuỗi URL
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                val u = try { Uri.parse(url ?: return false) } catch (e: Exception) { return false }
+                if (allowedPage(u)) return false
+                toastBlocked()
+                return true
+            }
+
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView?, url: String?): WebResourceResponse? {
+                val h = (try { Uri.parse(url ?: return null).host } catch (e: Exception) { null } ?: return null).lowercase()
+                return if (isAdHost(h)) WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0))) else null
             }
 
             // Ghi lai tung trang da xem (ke ca chuyen trang kieu SPA cua YouTube) de nut lui quay lai dung tung buoc
@@ -400,6 +415,16 @@ class TvPane(private val act: Activity, private val full: FullscreenHost) {
             }
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                 val h = (request?.url?.host ?: return null).lowercase()
+                return if (isAdHost(h)) WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0))) else null
+            }
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                val sc = (try { Uri.parse(url ?: return false).scheme } catch (e: Exception) { null } ?: "").lowercase()
+                return sc != "https" && sc != "http"
+            }
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView?, url: String?): WebResourceResponse? {
+                val h = (try { Uri.parse(url ?: return null).host } catch (e: Exception) { null } ?: return null).lowercase()
                 return if (isAdHost(h)) WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0))) else null
             }
             override fun onPageFinished(view: WebView?, u: String?) {

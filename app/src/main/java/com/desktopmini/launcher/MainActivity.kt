@@ -132,7 +132,7 @@ class MainActivity : Activity(), FullscreenHost {
         refreshStatus()
         ui.postDelayed(tick, 15000)
 
-        if (Build.VERSION.SDK_INT <= 28 &&
+        if (Build.VERSION.SDK_INT in 23..28 &&
             checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
         ) requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQ_STORAGE)
 
@@ -375,12 +375,12 @@ class MainActivity : Activity(), FullscreenHost {
     // ---------------- Giọng nói (YouTube) ----------------
 
     override fun launchVoice() {
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_VOICE_PERM); return
         }
         val it = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().let { if (it.country.isEmpty()) it.language else it.language + "-" + it.country })
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói để tìm kiếm trên YouTube")
         }
         try { startActivityForResult(it, REQ_VOICE) }

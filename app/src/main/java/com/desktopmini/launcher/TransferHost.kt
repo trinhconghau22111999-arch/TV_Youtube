@@ -68,6 +68,11 @@ class TransferHost(
                 val u = request?.url ?: return null
                 return assetLoader.shouldInterceptRequest(u)
             }
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+            override fun shouldInterceptRequest(view: WebView?, url: String?): WebResourceResponse? {
+                val u = try { Uri.parse(url ?: return null) } catch (e: Exception) { return null }
+                return assetLoader.shouldInterceptRequest(u)
+            }
         }
         w.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(

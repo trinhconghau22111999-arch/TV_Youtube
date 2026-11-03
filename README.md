@@ -2,6 +2,8 @@
 
 Giao diện kiểu macOS làm màn hình chính Android, dùng dữ liệu và cài đặt thật của máy.
 
+**Yêu cầu hệ điều hành: Android 4.4 (API 19) trở lên.** Trên Android 4.4–4.4.4 WebView hệ thống rất cũ (Chrome 30), YouTube/trang web hiện đại và chọn tệp trong trang có thể không chạy; từ Android 5 trở lên cập nhật WebView qua Google Play để chạy tốt.
+
 ## Cách có file APK
 1. Tạo repo GitHub mới, tải toàn bộ thư mục này lên (giữ nguyên `.github/workflows/build.yml`).
 2. Vào tab **Actions** → đợi "Build APK" chạy xong (~3-5 phút).
