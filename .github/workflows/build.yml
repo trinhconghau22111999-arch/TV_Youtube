@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -46,3 +49,15 @@ jobs:
           name: DesktopMiniTV-apk
           path: app/build/outputs/apk/release/*.apk
           retention-days: 7
+
+      - name: Đặt tên APK cố định
+        run: cp app/build/outputs/apk/release/*.apk TV_Youtube.apk
+
+      - name: Tạo Release và đính kèm APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.${{ github.run_number }}
+          name: TV Youtube 2.0.${{ github.run_number }}
+          body: "APK cài từ Android 4.4 (API 19) trở lên. Chạy được trên ARM và x86."
+          files: TV_Youtube.apk
+          make_latest: true
